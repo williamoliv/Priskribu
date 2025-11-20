@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Priskribu Vocabulary Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="confetti-container"></div>
+
+    <div id="splash-screen" class="fixed top-0 left-0 w-full h-full flex flex-col justify-center items-center z-50">
+        <span class="loader"></span>
+        <h2 class="text-2xl font-extrabold text-primary-purple mt-6 tracking-wider">PRISKRIBU</h2>
+    </div>
+
+    <div class="flex flex-col items-center w-full max-w-xl">
+        
+        <div id="top-controls" class="w-full flex justify-end mb-4">
+            <div id="top-controls-buttons" class="flex space-x-2 hidden">
+                <button id="restart-game-btn" class="btn-3d btn-orange" data-translate="restartGame">
+                    Restart Game
+                </button>
+                <button id="change-difficulty-btn" onclick="goToDifficulty()" class="btn-3d btn-yellow btn-dark-text" data-translate="changeDifficulty">
+                    Change Difficulty
+                </button>
+                <button id="back-to-menu-btn" onclick="goToMenu()" class="btn-3d btn-purple" data-translate="newGame">
+                    New Game
+                </button>
+            </div>
+        </div>
+
+        <header class="w-full mb-6 flex justify-between items-center bg-white p-4 rounded-2xl shadow-md border-b-4 border-gray-100 relative overflow-hidden">
+            <div class="flex items-center space-x-2 z-10">
+                <div class="p-2 bg-primary-purple/10 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#7C3AED" class="w-6 h-6 md:w-8 md:h-8">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-black text-gray-800 tracking-tight">PRISKRIBU</h1>
+                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide" data-translate="subtitle">Vocabulary Challenge</p>
+                </div>
+            </div>
+
+            <div id="header-scores" class="flex gap-2 z-10">
+                <div id="priskcoins-display" class="p-2 bg-yellow-100 text-yellow-700 font-bold rounded-xl shadow-inner text-sm md:text-base flex items-center gap-1">
+                    <span>🪙</span>
+                    <span id="priskcoins-score">0</span>
+                    <span class="hidden sm:inline" data-translate="priskcoinsSuffix">Priskcoins</span>
+                </div>
+
+                <div id="score-streak-wrapper" class="p-2 bg-medium-yellow/20 text-medium-yellow font-bold rounded-xl shadow-inner text-sm md:text-base hidden">
+                    <span data-translate="quizStreak">Streak: </span><span id="score-streak">0</span>
+                </div>
+
+                <div class="p-2 bg-success-green/10 text-success-green font-bold rounded-xl shadow-inner text-sm md:text-base">
+                    <span data-translate="quizCorrect">Points: </span><span id="score-correct">0</span>
+                </div>
+
+                <div id="score-total-wrapper" class="p-2 bg-primary-purple/10 text-primary-purple font-bold rounded-xl shadow-inner text-sm md:text-base">
+                    <span data-translate="quizTotal">Total: </span><span id="score-total">0</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="menu-section" class="text-center p-8 bg-gray-50 rounded-2xl">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700" data-translate="welcome">Welcome to Priskribu!</h2>
+            <p class="mb-6 text-gray-600" data-translate="welcomeMsg">Test and expand your English vocabulary knowledge.</p>
+            
+            <div class="flex flex-col gap-4 mb-6">
+                <button onclick="goToDifficulty()" class="btn-3d btn-green w-full" data-translate="modeStandard">
+                    Study Mode
+                </button>
+                <button onclick="startArcadeMode()" class="btn-3d btn-orange w-full" data-translate="modeArcade">
+                    Word Rush (10s Limit!)
+                </button>
+                <button onclick="startDailyChallenge()" class="btn-3d btn-yellow w-full relative overflow-hidden">
+                    <span data-translate="modeDaily">Word of the Day</span>
+                     <span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">NEW</span>
+                </button>
+                 <button onclick="startReviewSession()" class="btn-3d btn-purple w-full" data-translate="modeReview">
+                    🔁 Review Session
+                </button>
+            </div>
+
+            <div id="arcade-high-score" class="text-sm font-bold text-gray-400 mb-4 hidden">
+                Best Score: 0
+            </div>
+
+            <div class="flex justify-center gap-4 mt-4 pt-4 border-t border-gray-200">
+                 <button onclick="goToSettings()" class="text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 0 1 0-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                    <span data-translate="modeSettings">Settings</span>
+                </button>
+                <button onclick="goToHelp()" class="text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+                    </svg>
+                     <span data-translate="modeHelp">How to Play</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="difficulty-select" class="text-center p-8 bg-gray-50 rounded-2xl hidden">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700" data-translate="difficultyTitle">Choose Word Level</h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <button onclick="startGame('very_common')" class="smiley-btn btn-3d btn-easy-green btn-dark-text">
+                    <div class="smiley-btn-hover smiley-btn-hover-left"></div>
+                    <div class="smiley-btn-hover smiley-btn-hover-right"></div>
+                    <span class="smiley-btn-face">👍</span>
+                    <span data-translate="diffEasy">Easy</span>
+                </button>
+                <button onclick="startGame('usually_common')" class="smiley-btn btn-3d btn-yellow btn-dark-text">
+                    <div class="smiley-btn-hover smiley-btn-hover-left"></div>
+                    <div class="smiley-btn-hover smiley-btn-hover-right"></div>
+                    <span class="smiley-btn-face">🤔</span>
+                    <span data-translate="diffMedium">Medium</span>
+                </button>
+                <button onclick="startGame('not_so_common')" class="smiley-btn btn-3d btn-orange">
+                    <div class="smiley-btn-hover smiley-btn-hover-left"></div>
+                    <div class="smiley-btn-hover smiley-btn-hover-right"></div>
+                    <span class="smiley-btn-face">🔥</span>
+                    <span data-translate="diffHard">Hard</span>
+                </button>
+                 <button onclick="startGame('definitely_not_common')" class="smiley-btn btn-3d btn-red">
+                    <div class="smiley-btn-hover smiley-btn-hover-left"></div>
+                    <div class="smiley-btn-hover smiley-btn-hover-right"></div>
+                    <span class="smiley-btn-face">☠️</span>
+                    <span data-translate="diffVeryHard">Very Hard</span>
+                </button>
+            </div>
+            
+            <button onclick="goToMenu()" class="btn-3d btn-gray btn-dark-text btn-small block mx-auto" data-translate="backToMenu">
+                ← Back to Menu
+            </button>
+        </div>
+
+        <div id="help-section" class="p-8 bg-gray-50 rounded-2xl hidden">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 text-center" data-translate="helpTitle">How to Play</h2>
+            <p class="mb-6 text-gray-600 text-center" data-translate="helpDesc">
+                The goal of Priskribu is to correctly match the definition to the correct vocabulary word. If you get it wrong, the correct word will be highlighted!
+            </p>
+            <div class="space-y-4 mb-6 text-center text-gray-600">
+                <div class="bg-white p-4 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-lg mb-2 text-success-green" data-translate="helpStandardTitle">Study Mode:</h3>
+                    <p class="text-sm" data-translate="helpStandardDesc">
+                        Play at your own pace! Your score tracks correct vs total attempts. Choose your desired word difficulty to filter the words you encounter.
+                    </p>
+                </div>
+                 <div class="bg-white p-4 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-lg mb-2 text-hard-orange" data-translate="helpArcadeTitle">Word Rush:</h3>
+                    <p class="text-sm" data-translate="helpArcadeDesc">
+                       This is a high-speed challenge! You have 10 seconds to answer each question. If the timer hits zero OR you select the wrong answer, the game ends immediately. Your goal is to get the highest streak possible!
+                    </p>
+                </div>
+            </div>
+            <button onclick="goToMenu()" class="btn-3d btn-gray btn-dark-text btn-small block mx-auto" data-translate="backToMenu">
+                ← Back to Menu
+            </button>
+        </div>
+
+        <div id="settings-section" class="p-8 bg-gray-50 rounded-2xl hidden">
+            <h2 class="text-xl font-semibold mb-6 text-gray-700 text-center" data-translate="settingsTitle">Settings</h2>
+            
+            <div class="mb-6">
+                <label class="block text-lg font-medium text-gray-700 mb-2" data-translate="settingsSound">Sound</label>
+                <div class="flex gap-4">
+                     <button id="sound-on-btn" onclick="setSound(true)" class="setting-btn w-full py-2 rounded-lg flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                        </svg>
+                        <span data-translate="settingsSoundOn">On</span>
+                     </button>
+                     <button id="sound-off-btn" onclick="setSound(false)" class="setting-btn w-full py-2 rounded-lg flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+                        </svg>
+                        <span data-translate="settingsSoundOff">Off</span>
+                     </button>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <label class="block text-lg font-medium text-gray-700 mb-2" data-translate="settingsLang">Language</label>
+                <div class="grid grid-cols-3 gap-2">
+                     <button id="lang-en-btn" onclick="setLanguage('en')" class="setting-btn py-2 rounded-lg">English</button>
+                     <button id="lang-es-btn" onclick="setLanguage('es')" class="setting-btn py-2 rounded-lg">Español</button>
+                     <button id="lang-pt-btn" onclick="setLanguage('pt')" class="setting-btn py-2 rounded-lg">Português</button>
+                </div>
+            </div>
+
+            <button onclick="goToMenu()" class="btn-3d btn-gray btn-dark-text btn-small block mx-auto" data-translate="backToMenu">
+                ← Back to Menu
+            </button>
+        </div>
+        
+        <div id="review-section" class="p-4 md:p-8 bg-gray-50 rounded-2xl hidden h-[600px] flex flex-col">
+             <div class="text-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-700" data-translate="reviewTitle">Review Session</h2>
+                <p id="review-stats" class="text-sm text-gray-500 mt-1" data-translate="reviewStats">Correct: 0 | Wrong: 0</p>
+            </div>
+
+            <div class="flex justify-center gap-2 mb-4">
+                <button onclick="filterReview('all')" id="filter-all" class="filter-btn selected" data-translate="reviewFilterAll">All</button>
+                <button onclick="filterReview('practice')" id="filter-practice" class="filter-btn" data-translate="reviewFilterPractice">To Practice</button>
+                <button onclick="filterReview('mastered')" id="filter-mastered" class="filter-btn" data-translate="reviewFilterMastered">Mastered</button>
+            </div>
+
+            <div id="review-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
+                <p class="text-center text-gray-400 mt-10" data-translate="reviewNoWords">No words in history yet.</p>
+            </div>
+            
+            <div class="mt-4 pt-2 border-t border-gray-200">
+                <button onclick="goToMenu()" class="btn-3d btn-gray btn-dark-text btn-small block mx-auto" data-translate="backToMenu">
+                    ← Back to Menu
+                </button>
+            </div>
+        </div>
+
+        <div id="quiz-area" class="w-full hidden">
+            <div id="timer-container" class="w-full h-2 bg-gray-200 rounded-full mb-4 overflow-hidden hidden">
+                <div id="timer-bar" class="h-full bg-hard-orange w-full transition-all duration-1000 ease-linear"></div>
+            </div>
+             <div id="timer-display" class="text-center text-4xl font-extrabold text-primary-purple mb-4 hidden">
+                10
+            </div>
+
+            <div id="definition-box" class="bg-primary-purple/90 text-white p-6 rounded-2xl mb-6 shadow-xl text-center min-h-32 flex items-center justify-center">
+                <p id="definition-text" class="text-xl md:text-2xl font-medium italic"></p>
+            </div>
+
+            <div id="choices-container" class="grid grid-cols-2 gap-4">
+                <button id="choice-1" class="btn-3d btn-purple"></button>
+                <button id="choice-2" class="btn-3d btn-purple"></button>
+                <button id="choice-3" class="btn-3d btn-purple"></button>
+                <button id="choice-4" class="btn-3d btn-purple"></button>
+            </div>
+
+            <div id="feedback-message" class="mt-6 p-3 text-center text-xl font-bold rounded-xl hidden"></div>
+        </div>
+
+        <div id="game-over-section" class="text-center p-8 bg-error-red/10 rounded-2xl hidden">
+            <h2 id="game-over-title" class="text-2xl font-extrabold text-error-red mb-4" data-translate="arcadeGameOverTitle">GAME OVER!</h2>
+            <p id="game-over-msg" class="text-xl font-semibold text-gray-700 mb-6" data-translate="arcadeGameOverMsg">
+                Your streak ended.
+            </p>
+            <div class="mb-8">
+                 <p class="text-4xl font-black text-primary-purple" data-translate="arcadeFinalScore">Final Score</p>
+                 <p id="final-score" class="text-6xl font-black text-success-green">0</p>
+                 <p id="arcade-priskcoins-earned" class="text-lg font-bold text-yellow-600 mt-2 hidden">
+                    You earned: +0 Priskcoins
+                 </p>
+            </div>
+            
+            <div id="best-score-display" class="mb-8 p-4 bg-white rounded-xl inline-block shadow-sm">
+                <span class="text-gray-500 font-bold uppercase text-sm" data-translate="arcadeBestScore">Best Score: </span>
+                <span id="arcade-best-score" class="text-gray-800 font-black text-xl">0</span>
+            </div>
+             <div id="new-high-score-msg" class="hidden mb-6 animate-bounce text-yellow-500 font-extrabold text-xl" data-translate="arcadeNewHigh">
+                New High Score!
+            </div>
+
+            <button id="try-again-btn" onclick="restartGame()" class="btn-3d btn-purple w-full max-w-xs mx-auto block mb-4 pulse-invite-animation" data-translate="arcadeTryAgain">
+                Try Again
+            </button>
+            
+            <button onclick="goToMenu()" class="btn-3d btn-gray btn-dark-text btn-small block mx-auto" data-translate="backToMenu">
+                ← Back to Menu
+            </button>
+        </div>
+        
+        <div id="daily-challenge-section" class="text-center p-8 bg-gray-50 rounded-2xl hidden">
+            <h2 class="text-2xl font-extrabold text-primary-purple mb-2" data-translate="dailyTitle">Word of the Day</h2>
+            <p class="text-gray-500 mb-6 text-sm">Guess the word from the definition!</p>
+            
+            <div class="bg-white p-6 rounded-2xl shadow-inner mb-8">
+                <p id="daily-definition-text" class="text-xl font-medium italic text-gray-700">Loading...</p>
+            </div>
+            
+            <div class="mb-6 max-w-xs mx-auto">
+                <input type="text" id="daily-input" placeholder="TYPE HERE" autocomplete="off" spellcheck="false">
+            </div>
+            
+            <div id="daily-feedback-message" class="hidden mb-6 font-bold text-lg"></div>
+
+            <div class="flex justify-center gap-4">
+                <button id="daily-give-up-btn" onclick="handleGiveUpDaily()" class="btn-3d btn-gray btn-dark-text" data-translate="dailyGiveUp">
+                    Give Up
+                </button>
+                 <button id="daily-submit-btn" onclick="handleSubmitDailyGuess()" class="btn-3d btn-green" data-translate="dailySubmit">
+                    Submit
+                </button>
+            </div>
+            
+            <button onclick="goToMenu()" class="btn-3d btn-gray btn-dark-text btn-small block mx-auto mt-8" data-translate="backToMenu">
+                ← Back to Menu
+            </button>
+        </div>
+
+        <div id="daily-complete-section" class="text-center p-8 bg-gray-50 rounded-2xl hidden">
+             <h2 id="daily-complete-title" class="text-2xl font-extrabold text-success-green mb-4" data-translate="dailyCompleteTitle">Challenge Complete!</h2>
+             <p id="daily-complete-subtitle" class="text-lg text-gray-600 mb-6" data-translate="dailyCompleteSub">You've completed the challenge for today.</p>
+             
+             <div class="mb-6 bg-white p-6 rounded-2xl shadow-inner">
+                <p class="text-sm font-semibold text-primary-purple" data-translate="dailyTheWordWas">The word was:</p>
+                <p id="daily-complete-word" class="text-4xl font-black text-gray-800 uppercase tracking-wider">PRISKRIBU</p>
+                <p id="daily-complete-definition" class="text-base text-gray-600 italic mt-2">The definition of the word.</p>
+             </div>
+             
+             <p id="daily-priskcoins-earned" class="text-xl font-bold text-yellow-600 mb-6 hidden" data-translate="dailyPointsEarned">+100 Priskcoins!</p>
+
+             <div class="mb-8">
+                <p class="text-lg font-semibold text-gray-700" data-translate="dailyNextWord">Next word in:</p>
+                <p id="daily-countdown" class="text-3xl font-bold text-primary-purple">23h 59m 59s</p>
+             </div>
+
+             <button onclick="goToMenu()" class="btn-3d btn-gray btn-dark-text btn-small block mx-auto" data-translate="backToMenu">
+                ← Back to Menu
+            </button>
+        </div>
+        
+    </div>
+
+    <script src="vocabulary.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
