@@ -21,11 +21,15 @@
         <h2 class="text-2xl font-extrabold text-primary-purple mt-6 tracking-wider">PRISKRIBU</h2>
     </div>
 
+    <div id="countdown-overlay" class="fixed top-0 left-0 w-full h-full flex justify-center items-center z-40 hidden">
+        <div id="countdown-number" class="text-9xl font-black text-white drop-shadow-lg">3</div>
+    </div>
+
     <div class="flex flex-col items-center w-full max-w-xl">
         
         <div id="top-controls" class="w-full flex justify-end mb-4">
             <div id="top-controls-buttons" class="flex space-x-2 hidden">
-                <button id="restart-game-btn" class="btn-3d btn-orange" data-translate="restartGame">
+                <button id="restart-game-btn" onclick="restartGame()" class="btn-3d btn-orange" data-translate="restartGame">
                     Restart Game
                 </button>
                 <button id="change-difficulty-btn" onclick="goToDifficulty()" class="btn-3d btn-yellow btn-dark-text" data-translate="changeDifficulty">
