@@ -31,6 +31,8 @@ let highScore = 0;
 let restartCount = 0;
 let isRestartCooldown = false;
 let restartCooldownTimer = null;
+let restartCooldownSecondsLeft = 0; // Fixed missing variable
+
 // NEW: BUG FIX STATE (Prevents double clicking)
 let isProcessingAnswer = false; 
 
@@ -69,6 +71,10 @@ const reviewSectionEl = document.getElementById('review-section');
 const headerScoresEl = document.getElementById('header-scores');
 const timerDisplayEl = document.getElementById('timer-display');
 const finalScoreEl = document.getElementById('final-score'); 
+
+// NEW: Countdown Overlay (Might be null if index.html is not updated)
+const countdownOverlayEl = document.getElementById('countdown-overlay');
+const countdownNumberEl = document.getElementById('countdown-number');
 
 // NEW: Arcade High Score Elements
 const arcadeHighScoreEl = document.getElementById('arcade-high-score');
@@ -116,6 +122,7 @@ const feedbackMessageEl = document.getElementById('feedback-message');
 const topControlsButtonsEl = document.getElementById('top-controls-buttons');
 const restartGameBtnEl = document.getElementById('restart-game-btn');
 const changeDifficultyBtnEl = document.getElementById('change-difficulty-btn');
+const tryAgainBtnEl = document.getElementById('try-again-btn'); 
 
 // NEW
 const allSections = [
@@ -398,6 +405,12 @@ function updateLanguage() {
     if (highScore > 0 && arcadeHighScoreEl) {
         arcadeHighScoreEl.textContent = `${translations[currentLanguage].arcadeHighScore || 'Best: '}${highScore}`;
     }
+
+    if (isRestartCooldown) {
+        const btnText = lang.restartGameWait.replace('{s}', restartCooldownSecondsLeft);
+        if(restartGameBtnEl) restartGameBtnEl.textContent = btnText;
+        if(tryAgainBtnEl) tryAgainBtnEl.textContent = btnText;
+    }
 }
 
 function setLanguage(langCode) {
@@ -631,7 +644,9 @@ function startGame(difficulty) {
 
 // --- GAME LOGIC (ARCADE MODE) ---
 function startArcadeMode() {
-    playClickSound();
+    // Only play sound if we are actually starting, not just resetting state
+    if(!isArcadeMode) playClickSound();
+
     isArcadeMode = true;
     scoreCorrect = 0;
     streak = 0; 
@@ -643,12 +658,53 @@ function startArcadeMode() {
     timerDisplayEl.classList.remove('hidden');
     timerContainerEl.classList.remove('hidden');
     
+    // Show Quiz Area but... wait!
     showSection(quizAreaEl);
-    nextQuestion();
+
+    // NEW: Start Countdown before actual game loop
+    startArcadeCountdown();
+}
+
+function startArcadeCountdown() {
+    // SAFETY CHECK: If HTML element is missing, skip countdown to avoid crash
+    if(!countdownOverlayEl || !countdownNumberEl) {
+        console.warn("Countdown elements missing in index.html. Starting game immediately.");
+        nextQuestion();
+        return;
+    }
+
+    countdownOverlayEl.classList.remove('hidden');
+    
+    let count = 3;
+    
+    // Helper to re-trigger animation properly
+    const animateCount = (num) => {
+        countdownNumberEl.textContent = num;
+        countdownNumberEl.classList.remove('countdown-animate');
+        void countdownNumberEl.offsetWidth; // Trigger reflow
+        countdownNumberEl.classList.add('countdown-animate');
+    }
+
+    // Initialize first number
+    animateCount(count);
+
+    const countdownInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            animateCount(count);
+            playClickSound(); 
+        } else if (count === 0) {
+            animateCount("GO!");
+            playCorrectSound(); 
+        } else {
+            clearInterval(countdownInterval);
+            countdownOverlayEl.classList.add('hidden');
+            nextQuestion(); // START THE GAME!
+        }
+    }, 1000);
 }
 
 function nextQuestion() {
-    // BUG FIX: Reset the processing flag so the user can answer the new question
     isProcessingAnswer = false; 
 
     // Clear previous feedback
@@ -771,10 +827,7 @@ function handleTimeUp() {
 
 // --- CHECK ANSWER ---
 function checkAnswer(selectedWord) {
-    // BUG FIX: If we are already processing an answer, ignore this click.
     if (isProcessingAnswer) return;
-    
-    // LOCK: Immediately prevent further clicks
     isProcessingAnswer = true;
 
     if (isArcadeMode) stopTimer(); 
@@ -823,8 +876,6 @@ function checkAnswer(selectedWord) {
 
         feedbackMessageEl.classList.remove('hidden');
         updateScoreUI();
-
-        // Highlight correct answer immediately (visual feedback)
         highlightCorrectAnswer();
 
         setTimeout(() => {
@@ -921,14 +972,76 @@ function gameOverArcade() {
     arcadePriskcoinsEarnedEl.textContent = `${lang.arcadePriskcoinsEarned} +${streak} ${lang.priskcoinsSuffix}`;
     arcadePriskcoinsEarnedEl.classList.remove('hidden');
 
-    restartCount++;
-    const tryAgainBtnEl = document.getElementById('try-again-btn');
-    tryAgainBtnEl.classList.add('pulse-invite-animation');
+    // Remove pulse from try again initially, we handle it in logic
+    if(tryAgainBtnEl) tryAgainBtnEl.classList.remove('pulse-invite-animation');
 }
 
+// --- RESTART GAME LOGIC WITH COOLDOWN ---
 function restartGame() {
-    if (isRestartCooldown) return;
-    startArcadeMode();
+    if (isRestartCooldown) {
+        return; 
+    }
+    
+    // Increment usage
+    restartCount++;
+    
+    // Check limit (3 uses)
+    if (restartCount >= 3) {
+        activateRestartCooldown();
+        return; 
+    }
+    
+    // Normal Restart
+    if (isArcadeMode) {
+        startArcadeMode(); 
+    } else {
+        startGame(selectedDifficulty);
+    }
+}
+
+function activateRestartCooldown() {
+    isRestartCooldown = true;
+    restartCooldownSecondsLeft = 20;
+    restartCount = 0; 
+    
+    updateRestartButtonsState();
+
+    restartCooldownTimer = setInterval(() => {
+        restartCooldownSecondsLeft--;
+        updateRestartButtonsState();
+
+        if (restartCooldownSecondsLeft <= 0) {
+            clearInterval(restartCooldownTimer);
+            isRestartCooldown = false;
+            updateRestartButtonsState();
+        }
+    }, 1000);
+}
+
+function updateRestartButtonsState() {
+    const lang = translations[currentLanguage];
+    const btns = [restartGameBtnEl, tryAgainBtnEl];
+    
+    btns.forEach(btn => {
+        if (!btn) return;
+
+        if (isRestartCooldown) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            btn.textContent = lang.restartGameWait.replace('{s}', restartCooldownSecondsLeft);
+            btn.classList.remove('pulse-invite-animation');
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            if (btn.id === 'try-again-btn') {
+                btn.textContent = lang.arcadeTryAgain;
+                btn.classList.add('pulse-invite-animation'); 
+            } else {
+                btn.textContent = lang.restartGame;
+            }
+        }
+    });
 }
 
 // --- PRISKCOINS SYSTEM ---
