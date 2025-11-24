@@ -1,3 +1,4 @@
+
 /* === SPLASH LOADER === */
 #splash-screen {
     background-color: #111827; /* bg-gray-900 */
@@ -192,6 +193,7 @@ body {
 .btn-yellow { --btn-bg: #FBBF24; --btn-shadow: #fcd256; }
 .btn-easy-green { --btn-bg: #6EE7B7; --btn-shadow: #8ef0c9; }
 .btn-gray { --btn-bg: #6B7280; --btn-shadow: #868d9a; }
+.btn-blue { --btn-bg: #3B82F6; --btn-shadow: #60A5FA; } /* Added Blue */
 
 /* Text Color Helper */
 .btn-dark-text {

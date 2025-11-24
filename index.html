@@ -25,6 +25,11 @@
         <div id="countdown-number" class="text-9xl font-black text-white drop-shadow-lg">3</div>
     </div>
 
+    <div id="level-up-overlay" class="fixed top-0 left-0 w-full h-full flex flex-col justify-center items-center z-50 hidden pointer-events-none">
+        <h2 class="text-6xl font-black text-yellow-400 drop-shadow-md animate-bounce">LEVEL UP!</h2>
+        <p id="level-up-text" class="text-2xl text-white font-bold mt-2 drop-shadow-sm">You reached Level 2</p>
+    </div>
+
     <div class="flex flex-col items-center w-full max-w-xl">
         
         <div id="top-controls" class="w-full flex justify-end mb-4">
@@ -55,17 +60,22 @@
             </div>
 
             <div id="header-scores" class="flex gap-2 z-10">
+                <div id="xp-display" class="p-2 bg-blue-100 text-blue-700 font-bold rounded-xl shadow-inner text-sm md:text-base flex items-center gap-1 hidden">
+                    <span class="hidden sm:inline">XP:</span>
+                    <span id="xp-score">0</span>
+                </div>
+
                 <div id="priskcoins-display" class="p-2 bg-yellow-100 text-yellow-700 font-bold rounded-xl shadow-inner text-sm md:text-base flex items-center gap-1">
                     <span>🪙</span>
+                    <span class="hidden sm:inline" data-translate="totalPriskcoins">Coins: </span>
                     <span id="priskcoins-score">0</span>
-                    <span class="hidden sm:inline" data-translate="priskcoinsSuffix">Priskcoins</span>
                 </div>
 
                 <div id="score-streak-wrapper" class="p-2 bg-medium-yellow/20 text-medium-yellow font-bold rounded-xl shadow-inner text-sm md:text-base hidden">
                     <span data-translate="quizStreak">Streak: </span><span id="score-streak">0</span>
                 </div>
 
-                <div class="p-2 bg-success-green/10 text-success-green font-bold rounded-xl shadow-inner text-sm md:text-base">
+                <div id="score-correct-wrapper" class="p-2 bg-success-green/10 text-success-green font-bold rounded-xl shadow-inner text-sm md:text-base">
                     <span data-translate="quizCorrect">Points: </span><span id="score-correct">0</span>
                 </div>
 
@@ -76,10 +86,21 @@
         </header>
 
         <div id="menu-section" class="text-center p-8 bg-gray-50 rounded-2xl">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700" data-translate="welcome">Welcome to Priskribu!</h2>
-            <p class="mb-6 text-gray-600" data-translate="welcomeMsg">Test and expand your English vocabulary knowledge.</p>
             
-            <div class="flex flex-col gap-4 mb-6">
+            <div class="flex flex-col items-center mb-6">
+                <div class="relative">
+                    <div class="w-24 h-24 bg-gradient-to-tr from-primary-purple to-purple-400 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                        <span id="menu-level-number" class="text-4xl font-black text-white">1</span>
+                    </div>
+                    <div class="absolute -bottom-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide shadow-sm border-2 border-white">
+                        Level
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-semibold mb-4 text-gray-700" data-translate="welcome">Welcome to Priskribu!</h2>
+            
+            <div class="flex flex-col gap-3 mb-6">
                 <button onclick="goToDifficulty()" class="btn-3d btn-green w-full" data-translate="modeStandard">
                     Study Mode
                 </button>
@@ -90,19 +111,20 @@
                     <span data-translate="modeDaily">Word of the Day</span>
                      <span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">NEW</span>
                 </button>
+                
+                <button onclick="goToProfile()" class="btn-3d btn-blue w-full flex justify-center items-center gap-2">
+                    <span>👤</span> <span data-translate="modeProfile">My Profile</span>
+                </button>
+
                  <button onclick="startReviewSession()" class="btn-3d btn-purple w-full" data-translate="modeReview">
                     🔁 Review Session
                 </button>
             </div>
 
-            <div id="arcade-high-score" class="text-sm font-bold text-gray-400 mb-4 hidden">
-                Best Score: 0
-            </div>
-
             <div class="flex justify-center gap-4 mt-4 pt-4 border-t border-gray-200">
                  <button onclick="goToSettings()" class="text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 0 1 0-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.26.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 0 1 0-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" />
                       <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     </svg>
                     <span data-translate="modeSettings">Settings</span>
@@ -151,25 +173,52 @@
             </button>
         </div>
 
-        <div id="help-section" class="p-8 bg-gray-50 rounded-2xl hidden">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700 text-center" data-translate="helpTitle">How to Play</h2>
-            <p class="mb-6 text-gray-600 text-center" data-translate="helpDesc">
-                The goal of Priskribu is to correctly match the definition to the correct vocabulary word. If you get it wrong, the correct word will be highlighted!
-            </p>
-            <div class="space-y-4 mb-6 text-center text-gray-600">
-                <div class="bg-white p-4 rounded-xl shadow-sm">
-                    <h3 class="font-bold text-lg mb-2 text-success-green" data-translate="helpStandardTitle">Study Mode:</h3>
-                    <p class="text-sm" data-translate="helpStandardDesc">
-                        Play at your own pace! Your score tracks correct vs total attempts. Choose your desired word difficulty to filter the words you encounter.
-                    </p>
+        <div id="profile-section" class="p-6 bg-gray-50 rounded-2xl hidden w-full">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-extrabold text-gray-800" data-translate="profileTitle">Player Profile</h2>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 text-center relative overflow-hidden">
+                <div class="inline-block relative mb-4">
+                    <div class="w-20 h-20 bg-primary-purple rounded-full flex items-center justify-center border-4 border-purple-200 shadow-md mx-auto">
+                        <span id="profile-level-number" class="text-3xl font-black text-white">1</span>
+                    </div>
+                    <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                        Level
+                    </div>
                 </div>
-                 <div class="bg-white p-4 rounded-xl shadow-sm">
-                    <h3 class="font-bold text-lg mb-2 text-hard-orange" data-translate="helpArcadeTitle">Word Rush:</h3>
-                    <p class="text-sm" data-translate="helpArcadeDesc">
-                       This is a high-speed challenge! You have 10 seconds to answer each question. If the timer hits zero OR you select the wrong answer, the game ends immediately. Your goal is to get the highest streak possible!
-                    </p>
+
+                <div class="mb-1">
+                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
+                        <span>Current XP</span>
+                        <span id="profile-xp-text">0 / 1000</span>
+                    </div>
+                    <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden relative">
+                        <div id="profile-xp-bar" class="h-full bg-gradient-to-r from-blue-400 to-blue-600 w-0 transition-all duration-1000 ease-out"></div>
+                    </div>
+                    <p class="text-[10px] text-gray-400 mt-1 text-right" data-translate="profileNextLevel">to next level</p>
                 </div>
             </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-blue-100">
+                    <p class="text-xs text-gray-400 font-bold uppercase">Total XP</p>
+                    <p id="stat-total-xp" class="text-2xl font-black text-blue-600">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-yellow-100">
+                    <p class="text-xs text-gray-400 font-bold uppercase">Coins</p>
+                    <p id="stat-total-coins" class="text-2xl font-black text-yellow-500">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-green-100">
+                    <p class="text-xs text-gray-400 font-bold uppercase">Mastered</p>
+                    <p id="stat-mastered" class="text-2xl font-black text-green-500">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-purple-100">
+                    <p class="text-xs text-gray-400 font-bold uppercase">Seen</p>
+                    <p id="stat-seen" class="text-2xl font-black text-purple-500">0</p>
+                </div>
+            </div>
+
             <button onclick="goToMenu()" class="btn-3d btn-gray btn-dark-text btn-small block mx-auto" data-translate="backToMenu">
                 ← Back to Menu
             </button>
@@ -182,15 +231,9 @@
                 <label class="block text-lg font-medium text-gray-700 mb-2" data-translate="settingsSound">Sound</label>
                 <div class="flex gap-4">
                      <button id="sound-on-btn" onclick="setSound(true)" class="setting-btn w-full py-2 rounded-lg flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                        </svg>
                         <span data-translate="settingsSoundOn">On</span>
                      </button>
                      <button id="sound-off-btn" onclick="setSound(false)" class="setting-btn w-full py-2 rounded-lg flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                        </svg>
                         <span data-translate="settingsSoundOff">Off</span>
                      </button>
                 </div>

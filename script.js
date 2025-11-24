@@ -17,42 +17,50 @@ tailwind.config = {
 // --- GLOBAL GAME STATE ---
 let currentWords = [];
 let currentQuestion = {};
-let scoreCorrect = 0;
-let scoreTotal = 0; // Keeps track of total ATTEMPTS in standard mode
+let scoreCorrect = 0; // Session Score
+let scoreTotal = 0; // Session Attempts
 let selectedDifficulty = 'very_common'; // Default
-// NEW: Arcade Mode State
+
+// XP System
+let totalXP = 0;
+const XP_PER_LEVEL = 1000;
+
+// Arcade Mode State
 let isArcadeMode = false;
-let arcadeScore = 0;
+let arcadeScore = 0; // This acts as session XP gain in Arcade
 let timerInterval = null;
 let timeLeft = 10;
 let streak = 0;
 let highScore = 0;
-// NEW: Restart Cooldown State
+
+// Restart Cooldown State
 let restartCount = 0;
 let isRestartCooldown = false;
 let restartCooldownTimer = null;
-let restartCooldownSecondsLeft = 0; // Fixed missing variable
+let restartCooldownSecondsLeft = 0; 
 
-// NEW: BUG FIX STATE (Prevents double clicking)
+// BUG FIX STATE (Prevents double clicking)
 let isProcessingAnswer = false; 
 
-// NEW: SETTINGS STATE
+// SETTINGS STATE
 let currentLanguage = 'en'; // 'en', 'es', 'pt'
 let isSoundOn = true;
-let isAudioStarted = false; // Track if Tone.js context is running
+let isAudioStarted = false; 
 
-// --- NEW: localStorage Keys ---
+// --- localStorage Keys ---
 const HIGH_SCORE_KEY = 'priskribu_high_score';
 const SOUND_KEY = 'priskribu_sound';
 const LANG_KEY = 'priskribu_language';
 const DAILY_DATE_KEY = 'priskribu_daily_date'; 
 const PRISKCOINS_KEY = 'priskribu_priskcoins'; 
 const HISTORY_KEY = 'priskribu_word_history'; 
+const XP_KEY = 'priskribu_xp';
 
 // --- UI Element Selectors ---
 const scoreCorrectEl = document.getElementById('score-correct');
 const scoreTotalEl = document.getElementById('score-total');
 const scoreTotalWrapperEl = document.getElementById('score-total-wrapper'); 
+const scoreStreakWrapperEl = document.getElementById('score-streak-wrapper'); // Helper ID
 const definitionTextEl = document.getElementById('definition-text');
 const choicesContainerEl = document.getElementById('choices-container');
 
@@ -61,6 +69,7 @@ const menuSectionEl = document.getElementById('menu-section');
 const difficultySelectEl = document.getElementById('difficulty-select');
 const helpSectionEl = document.getElementById('help-section');
 const settingsSectionEl = document.getElementById('settings-section');
+const profileSectionEl = document.getElementById('profile-section');
 
 const quizAreaEl = document.getElementById('quiz-area');
 const gameOverSectionEl = document.getElementById('game-over-section'); 
@@ -69,35 +78,53 @@ const dailyCompleteSectionEl = document.getElementById('daily-complete-section')
 const reviewSectionEl = document.getElementById('review-section'); 
 
 const headerScoresEl = document.getElementById('header-scores');
+const xpDisplayEl = document.getElementById('xp-display');
+const xpScoreEl = document.getElementById('xp-score');
 const timerDisplayEl = document.getElementById('timer-display');
 const finalScoreEl = document.getElementById('final-score'); 
 
-// NEW: Countdown Overlay (Might be null if index.html is not updated)
+// Countdown Overlay
 const countdownOverlayEl = document.getElementById('countdown-overlay');
 const countdownNumberEl = document.getElementById('countdown-number');
 
-// NEW: Arcade High Score Elements
+// Level Up Overlay
+const levelUpOverlayEl = document.getElementById('level-up-overlay');
+const levelUpTextEl = document.getElementById('level-up-text');
+
+// Arcade High Score Elements
 const arcadeHighScoreEl = document.getElementById('arcade-high-score');
 const newHighScoreMsgEl = document.getElementById('new-high-score-msg');
 const bestScoreDisplayEl = document.getElementById('best-score-display');
 const arcadeBestScoreEl = document.getElementById('arcade-best-score');
 
-// NEW: Arcade Coins Earned
+// Arcade Coins Earned
 const arcadePriskcoinsEarnedEl = document.getElementById('arcade-priskcoins-earned');
 
-// NEW: Priskcoins Elements
+// Priskcoins Elements
 let totalPriskcoins = 0;
 const priskcoinsScoreEl = document.getElementById('priskcoins-score');
 const priskcoinsDisplayEl = document.getElementById('priskcoins-display');
 
-// NEW: Daily Challenge Elements
+// Menu Level Badge
+const menuLevelNumberEl = document.getElementById('menu-level-number');
+
+// Profile Elements
+const profileLevelNumberEl = document.getElementById('profile-level-number');
+const profileXpTextEl = document.getElementById('profile-xp-text');
+const profileXpBarEl = document.getElementById('profile-xp-bar');
+const statTotalXpEl = document.getElementById('stat-total-xp');
+const statTotalCoinsEl = document.getElementById('stat-total-coins');
+const statMasteredEl = document.getElementById('stat-mastered');
+const statSeenEl = document.getElementById('stat-seen');
+
+// Daily Challenge Elements
 const dailyDefinitionTextEl = document.getElementById('daily-definition-text');
 const dailyInputEl = document.getElementById('daily-input');
 const dailyFeedbackMessageEl = document.getElementById('daily-feedback-message');
 const dailyGiveUpBtnEl = document.getElementById('daily-give-up-btn');
 const dailySubmitBtnEl = document.getElementById('daily-submit-btn');
 
-// NEW: Daily Complete Elements
+// Daily Complete Elements
 const dailyCompleteTitleEl = document.getElementById('daily-complete-title');
 const dailyCompleteSubtitleEl = document.getElementById('daily-complete-subtitle');
 const dailyCompleteWordEl = document.getElementById('daily-complete-word');
@@ -105,14 +132,14 @@ const dailyCompleteDefinitionEl = document.getElementById('daily-complete-defini
 const dailyCountdownEl = document.getElementById('daily-countdown');
 const dailyPriskcoinsEarnedEl = document.getElementById('daily-priskcoins-earned');
 
-// NEW: Review Elements
+// Review Elements
 const reviewListEl = document.getElementById('review-list');
 const reviewStatsEl = document.getElementById('review-stats');
 
 let dailyWord = null; 
 let wordHistory = {}; 
 
-// NEW: Timer Bar Element
+// Timer Bar Element
 const timerBarEl = document.getElementById('timer-bar');
 const timerContainerEl = document.getElementById('timer-container');
 
@@ -122,7 +149,7 @@ const feedbackMessageEl = document.getElementById('feedback-message');
 const topControlsButtonsEl = document.getElementById('top-controls-buttons');
 const restartGameBtnEl = document.getElementById('restart-game-btn');
 const changeDifficultyBtnEl = document.getElementById('change-difficulty-btn');
-const tryAgainBtnEl = document.getElementById('try-again-btn'); 
+const tryAgainBtnEl = document.getElementById('try-again-btn');
 
 // NEW
 const allSections = [
@@ -130,6 +157,7 @@ const allSections = [
     difficultySelectEl, 
     helpSectionEl, 
     settingsSectionEl,
+    profileSectionEl,
     quizAreaEl,
     gameOverSectionEl, 
     dailyChallengeSectionEl, 
@@ -152,7 +180,7 @@ const translations = {
         welcomeMsg: "Test and expand your English vocabulary knowledge.",
         modeStandard: "Study Mode",
         modeArcade: "Word Rush (10s Limit!)",
-        modeLeaderboard: "Global Leaderboard (Soon)🔒",
+        modeProfile: "My Profile",
         modeSettings: "Settings",
         modeHelp: "How to Play",
         modeReview: "🔁 Review Session",
@@ -165,9 +193,9 @@ const translations = {
         helpTitle: "How to Play",
         helpDesc: "The goal of Priskribu is to correctly match the definition to the correct vocabulary word. If you get it wrong, the correct word will be highlighted!",
         helpStandardTitle: "Study Mode:",
-        helpStandardDesc: "Play at your own pace! Your score tracks correct vs total attempts. Choose your desired word difficulty to filter the words you encounter.",
+        helpStandardDesc: "Play at your own pace! Your score tracks correct vs total attempts.",
         helpArcadeTitle: "Word Rush:",
-        helpArcadeDesc: "This is a high-speed challenge! You have 10 seconds to answer each question. If the timer hits zero OR you select the wrong answer, the game ends immediately. Your goal is to get the highest streak possible!",
+        helpArcadeDesc: "This is a high-speed challenge! You have 10 seconds to answer each question.",
         settingsTitle: "Settings",
         settingsSound: "Sound",
         settingsSoundOn: "On",
@@ -176,30 +204,20 @@ const translations = {
         timerTimeUp: "Time's Up!",
         timerCorrectWord: "The correct word was:",
         arcadeGameOverTitle: "WORD RUSH: CHALLENGE OVER!",
-        arcadeGameOverMsg: [
-            "Nice streak! That was a solid run.",
-            "You were unstoppable! That was a tough one.",
-            "So close! You got this next time.",
-            "Incredible effort! That was a great attempt."
-        ],
-        arcadeFinalScore: "Final Score",
-        arcadeGameOverPrompt: [
-            "Don't stop now! Give it one more shot."
-        ],
+        arcadeGameOverMsg: ["Nice streak!", "Good effort!", "Keep it up!", "Unstoppable!"],
+        arcadeFinalScore: "Session XP",
         arcadeTryAgain: "Try Again",
-        arcadeNewHigh: "New High Score!", 
+        arcadeNewHigh: "New Best Score!", 
         arcadeBestScore: "Best Score: ", 
-        feedbackCorrect: "Correct! Well done!",
+        feedbackCorrect: "Correct! +15 XP",
         feedbackWrong: "Wrong! The correct word was:",
-        feedbackGameOver: "Game over",
-        bonusRound: "BONUS ROUND!", 
-        feedbackBonus: "+20 (Bonus Round!)", 
-        feedbackFast: "+10 (Fast Answer!)", 
-        feedbackNice: "+5 (Nice!)", 
-        totalPriskcoins: "Priskcoins: ",
-        priskcoinsSuffix: "Priskcoins",
+        feedbackBonus: "+20 XP (Bonus!)", 
+        feedbackFast: "+10 XP (Fast!)", 
+        feedbackNice: "+5 XP (Nice!)", 
+        totalPriskcoins: "Coins: ",
+        priskcoinsSuffix: "Coins",
         arcadePriskcoinsEarned: "You earned: ",
-        dailyPriskcoinsEarned: "+100 Priskcoins!", 
+        dailyPriskcoinsEarned: "+100 Coins & +200 XP!", 
         modeDaily: "Word of the Day",
         dailyTitle: "Word of the Day",
         dailyGiveUp: "Give Up",
@@ -209,14 +227,18 @@ const translations = {
         dailyCompleteSubFailed: "Better luck next time!",
         dailyTheWordWas: "The word was:",
         dailyNextWord: "Next word in:",
-        dailyFeedbackWrong: "Not quite, try again!",
         dailyFeedbackSuccess: "You got it! Amazing!",
+        dailyFeedbackWrong: "Not quite, try again!",
         reviewTitle: "Review Session",
         reviewFilterAll: "All",
         reviewFilterPractice: "To Practice",
         reviewFilterMastered: "Mastered",
-        reviewNoWords: "No words in history yet. Play a game to track your progress!",
-        reviewStats: "Correct: {c} | Wrong: {i}"
+        reviewNoWords: "No words in history yet.",
+        reviewStats: "Correct: {c} | Wrong: {i}",
+        profileTitle: "Player Profile",
+        profileNextLevel: "to next level",
+        levelUp: "LEVEL UP!",
+        levelUpMsg: "You reached Level {l}"
     },
     es: {
         subtitle: "Desafío de Vocabulario",
@@ -231,7 +253,7 @@ const translations = {
         welcomeMsg: "Pon a prueba y amplía tu vocabulario en inglés.",
         modeStandard: "Modo Estudio",
         modeArcade: "Word Rush (¡Límite 10s!)",
-        modeLeaderboard: "Tabla Global (Pronto)🔒",
+        modeProfile: "Mi Perfil",
         modeSettings: "Ajustes",
         modeHelp: "Cómo Jugar",
         modeReview: "🔁 Sesión de Repaso",
@@ -244,9 +266,9 @@ const translations = {
         helpTitle: "Cómo Jugar",
         helpDesc: "El objetivo de Priskribu es asociar correctamente la definición con la palabra de vocabulario correcta. Si te equivocas, ¡se destacará la palabra correcta!",
         helpStandardTitle: "Modo Estudio:",
-        helpStandardDesc: "¡Juega a tu propio ritmo! Tu puntuación registra los aciertos frente a los intentos totales. Elige la dificultad de palabra que desees para filtrar las palabras que encuentres.",
+        helpStandardDesc: "¡Juega a tu propio ritmo! Tu puntuación registra los aciertos frente a los intentos totales.",
         helpArcadeTitle: "Word Rush:",
-        helpArcadeDesc: "¡Este es un desafío de alta velocidad! Tienes 10 segundos para responder cada pregunta. Si el temporizador llega a cero O seleccionas la respuesta incorrecta, el juego termina inmediatamente. ¡Tu objetivo es conseguir la puntuación más alta posible en una sola racha!",
+        helpArcadeDesc: "¡Este es un desafío de alta velocidad! Tienes 10 segundos para responder cada pregunta.",
         settingsTitle: "Ajustes",
         settingsSound: "Sonido",
         settingsSoundOn: "Activado",
@@ -255,30 +277,20 @@ const translations = {
         timerTimeUp: "¡Se acabó el tiempo!",
         timerCorrectWord: "La palabra correcta era:",
         arcadeGameOverTitle: "WORD RUSH: ¡DESAFÍO TERMINADO!",
-        arcadeGameOverMsg: [
-            "¡Buena racha! Fue una serie sólida.",
-            "¡Estabas imparable! Esa fue difícil.",
-            "¡Casi lo logras! La próxima la tienes.",
-            "¡Esfuerzo increíble! Fue un buen intento."
-        ],
-        arcadeFinalScore: "Puntuación Final",
-        arcadeGameOverPrompt: [
-            "¡No pares ahora! Inténtalo una vez más."
-        ],
+        arcadeGameOverMsg: ["¡Buena racha!", "¡Buen esfuerzo!", "¡Sigue así!", "¡Imparable!"],
+        arcadeFinalScore: "XP de Sesión",
         arcadeTryAgain: "Intentar de Nuevo",
         arcadeNewHigh: "¡Nuevo Récord!", 
         arcadeBestScore: "Mejor Puntuación: ", 
-        feedbackCorrect: "¡Correcto! ¡Muy bien!",
+        feedbackCorrect: "¡Correcto! +15 XP",
         feedbackWrong: "¡Incorrecto! La palabra era:",
-        feedbackGameOver: "Juego terminado",
-        bonusRound: "¡RONDA DE BONO!", 
-        feedbackBonus: "+20 (¡Ronda de Bono!)", 
-        feedbackFast: "+10 (¡Respuesta Rápida!)", 
-        feedbackNice: "+5 (¡Bien!)", 
-        totalPriskcoins: "Priskcoins: ",
-        priskcoinsSuffix: "Priskcoins",
+        feedbackBonus: "+20 XP (¡Bono!)", 
+        feedbackFast: "+10 XP (¡Rápido!)", 
+        feedbackNice: "+5 XP (¡Bien!)", 
+        totalPriskcoins: "Monedas: ",
+        priskcoinsSuffix: "Monedas",
         arcadePriskcoinsEarned: "Ganaste: ",
-        dailyPriskcoinsEarned: "¡+100 Priskcoins!", 
+        dailyPriskcoinsEarned: "¡+100 Monedas y +200 XP!", 
         modeDaily: "Palabra del Día",
         dailyTitle: "Palabra del Día",
         dailyGiveUp: "Rendirse",
@@ -288,14 +300,18 @@ const translations = {
         dailyCompleteSubFailed: "¡Mejor suerte la próxima vez!",
         dailyTheWordWas: "La palabra era:",
         dailyNextWord: "Próxima palabra en:",
-        dailyFeedbackWrong: "¡Esa no es, intenta de nuevo!",
         dailyFeedbackSuccess: "¡Lo lograste! ¡Increíble!",
+        dailyFeedbackWrong: "¡Esa no es, intenta de nuevo!",
         reviewTitle: "Sesión de Repaso",
         reviewFilterAll: "Todas",
         reviewFilterPractice: "Para Practicar",
         reviewFilterMastered: "Dominadas",
-        reviewNoWords: "Aún no hay palabras en tu historial. ¡Juega una partida para seguir tu progreso!",
-        reviewStats: "Correctas: {c} | Incorrectas: {i}"
+        reviewNoWords: "Aún no hay palabras en tu historial.",
+        reviewStats: "Correctas: {c} | Incorrectas: {i}",
+        profileTitle: "Perfil del Jugador",
+        profileNextLevel: "para el siguiente nivel",
+        levelUp: "¡SUBISTE DE NIVEL!",
+        levelUpMsg: "Alcanzaste el Nivel {l}"
     },
     pt: {
         subtitle: "Desafio de Vocabulário",
@@ -310,7 +326,7 @@ const translations = {
         welcomeMsg: "Teste e expanda o seu vocabulário de inglês.",
         modeStandard: "Modo Estudo",
         modeArcade: "Word Rush (Limite 10s!)",
-        modeLeaderboard: "Classificação Global (Breve)🔒",
+        modeProfile: "Meu Perfil",
         modeSettings: "Definições",
         modeHelp: "Como Jogar",
         modeReview: "🔁 Sessão de Revisão",
@@ -323,9 +339,9 @@ const translations = {
         helpTitle: "Como Jogar",
         helpDesc: "O objetivo do Priskribu é associar corretamente a definição à palavra correta. Se errares, a palavra correta será destacada!",
         helpStandardTitle: "Modo Estudo:",
-        helpStandardDesc: "Joga ao teu próprio ritmo! A tua pontuação regista os acertos face ao total de tentativas. Escolhe a dificuldade desejada para filtrar as palavras.",
+        helpStandardDesc: "Joga ao teu próprio ritmo! A tua pontuação regista os acertos face ao total de tentativas.",
         helpArcadeTitle: "Word Rush:",
-        helpArcadeDesc: "Este é um desafio de alta velocidade! Tens 10 segundos para responder. Se o tempo acabar OU escolheres a resposta errada, o jogo termina. O teu objetivo é a maior série possível!",
+        helpArcadeDesc: "Este é um desafio de alta velocidade! Tens 10 segundos para responder.",
         settingsTitle: "Definições",
         settingsSound: "Som",
         settingsSoundOn: "Ligado",
@@ -334,30 +350,20 @@ const translations = {
         timerTimeUp: "Tempo esgotado!",
         timerCorrectWord: "A palavra correta era:",
         arcadeGameOverTitle: "WORD RUSH: DESAFIO TERMINADO!",
-        arcadeGameOverMsg: [
-            "Boa série! Foi uma sequência sólida.",
-            "Estavas imparável! Essa foi difícil.",
-            "Tão perto! Na próxima consegues.",
-            "Esforço incrível! Foi uma ótima tentativa."
-        ],
-        arcadeFinalScore: "Pontuação Final",
-        arcadeGameOverPrompt: [
-            "Não pares agora! Tenta mais uma vez."
-        ],
+        arcadeGameOverMsg: ["Boa série!", "Bom esforço!", "Continua assim!", "Imparável!"],
+        arcadeFinalScore: "XP da Sessão",
         arcadeTryAgain: "Tentar Novamente",
         arcadeNewHigh: "Novo Recorde!", 
         arcadeBestScore: "Melhor Pontuação: ", 
-        feedbackCorrect: "Correto! Muito bem!",
+        feedbackCorrect: "Correto! +15 XP",
         feedbackWrong: "Errado! A palavra correta era:",
-        feedbackGameOver: "Fim do jogo",
-        bonusRound: "RONDA DE BÓNUS!", 
-        feedbackBonus: "+20 (Ronda de Bónus!)", 
-        feedbackFast: "+10 (Rápido!)", 
-        feedbackNice: "+5 (Boa!)", 
-        totalPriskcoins: "Priskcoins: ",
-        priskcoinsSuffix: "Priskcoins",
+        feedbackBonus: "+20 XP (Bónus!)", 
+        feedbackFast: "+10 XP (Rápido!)", 
+        feedbackNice: "+5 XP (Boa!)", 
+        totalPriskcoins: "Moedas: ",
+        priskcoinsSuffix: "Moedas",
         arcadePriskcoinsEarned: "Ganhaste: ",
-        dailyPriskcoinsEarned: "+100 Priskcoins!", 
+        dailyPriskcoinsEarned: "+100 Moedas e +200 XP!", 
         modeDaily: "Palavra do Dia",
         dailyTitle: "Palabra do Dia",
         dailyGiveUp: "Desistir",
@@ -367,14 +373,18 @@ const translations = {
         dailyCompleteSubFailed: "Mais sorte para a próxima!",
         dailyTheWordWas: "A palavra era:",
         dailyNextWord: "Próxima palavra em:",
-        dailyFeedbackWrong: "Não é essa, tenta de novo!",
         dailyFeedbackSuccess: "Conseguiste! Incrível!",
+        dailyFeedbackWrong: "Não é essa, tenta de novo!",
         reviewTitle: "Sessão de Revisão",
         reviewFilterAll: "Todas",
         reviewFilterPractice: "Para Praticar",
         reviewFilterMastered: "Dominadas",
-        reviewNoWords: "Ainda sem palavras no histórico. Joga para acompanhar o teu progresso!",
-        reviewStats: "Corretas: {c} | Incorretas: {i}"
+        reviewNoWords: "Ainda sem palavras no histórico.",
+        reviewStats: "Corretas: {c} | Incorretas: {i}",
+        profileTitle: "Perfil do Jogador",
+        profileNextLevel: "para o próximo nível",
+        levelUp: "SUBIU DE NÍVEL!",
+        levelUpMsg: "Chegou ao Nível {l}"
     }
 };
 
@@ -400,7 +410,6 @@ function updateLanguage() {
     });
     
     priskcoinsScoreEl.textContent = totalPriskcoins;
-    priskcoinsDisplayEl.querySelector('span[data-translate]').textContent = lang.totalPriskcoins || "Priskcoins: ";
     
     if (highScore > 0 && arcadeHighScoreEl) {
         arcadeHighScoreEl.textContent = `${translations[currentLanguage].arcadeHighScore || 'Best: '}${highScore}`;
@@ -420,50 +429,80 @@ function setLanguage(langCode) {
     updateSettingsUI();
 }
 
-// --- SOUND EFFECTS (Using Tone.js) ---
-const synth = new Tone.Synth().toDestination();
-const polySynth = new Tone.PolySynth().toDestination(); 
+// --- NEW: DECODER HELPER (SECURITY) ---
+function decodeWord(str) {
+    if (!str) return "";
+    try {
+        return decodeURIComponent(escape(window.atob(str)));
+    } catch (e) {
+        return str;
+    }
+}
+
+// --- SAFE AUDIO SYSTEM ---
+// Using let instead of const to prevent initialization crash
+let synth = null;
+let polySynth = null;
 
 async function ensureAudioStarted() {
     if (!isAudioStarted) {
         await Tone.start();
+        // Initialize synths ONLY after user interaction
+        if (!synth) synth = new Tone.Synth().toDestination();
+        if (!polySynth) polySynth = new Tone.PolySynth().toDestination();
         isAudioStarted = true;
     }
 }
 
 async function playClickSound() {
-    await ensureAudioStarted();
-    if (isSoundOn) {
-        synth.triggerAttackRelease("C5", "32n", undefined, 0.1); 
+    try {
+        await ensureAudioStarted();
+        if (isSoundOn && synth) {
+            synth.triggerAttackRelease("C5", "32n", undefined, 0.1); 
+        }
+    } catch (e) {
+        console.warn("Audio failed:", e);
     }
 }
 
-function playCorrectSound() {
-    if (isSoundOn) {
-        polySynth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "16n");
-    }
+async function playCorrectSound() {
+    try {
+        await ensureAudioStarted();
+        if (isSoundOn && polySynth) {
+            polySynth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "16n");
+        }
+    } catch (e) { console.warn("Audio failed:", e); }
 }
 
-function playWrongSound() {
-    if (isSoundOn) {
-        synth.triggerAttackRelease("G2", "8n"); 
-    }
+async function playWrongSound() {
+    try {
+        await ensureAudioStarted();
+        if (isSoundOn && synth) {
+            synth.triggerAttackRelease("G2", "8n"); 
+        }
+    } catch (e) { console.warn("Audio failed:", e); }
 }
 
-function playGameOverSound() {
-    if (isSoundOn) {
-        const now = Tone.now();
-        polySynth.triggerAttackRelease("C4", "8n", now);
-        polySynth.triggerAttackRelease("G3", "8n", now + 0.1);
-        polySynth.triggerAttackRelease("E3", "8n", now + 0.2);
-        polySynth.triggerAttackRelease("C3", "4n", now + 0.3);
-    }
+async function playGameOverSound() {
+    try {
+        await ensureAudioStarted();
+        if (isSoundOn && polySynth) {
+            const now = Tone.now();
+            polySynth.triggerAttackRelease("C4", "8n", now);
+            polySynth.triggerAttackRelease("G3", "8n", now + 0.1);
+            polySynth.triggerAttackRelease("E3", "8n", now + 0.2);
+            polySynth.triggerAttackRelease("C3", "4n", now + 0.3);
+        }
+    } catch (e) { console.warn("Audio failed:", e); }
 }
 
-function playBonusSound() {
-    if(isSoundOn) {
-        polySynth.triggerAttackRelease(["D5", "F#5", "A5", "D6"], "16n");
-    }
+async function playBonusSound() {
+    try {
+        await ensureAudioStarted();
+        if(isSoundOn && polySynth) {
+            polySynth.triggerAttackRelease(["D5", "F#5", "A5", "D6"], "16n");
+        }
+    } catch (e) { console.warn("Audio failed:", e); }
 }
 
 // --- INITIALIZATION ---
@@ -494,6 +533,12 @@ window.onload = () => {
         priskcoinsScoreEl.textContent = totalPriskcoins;
     }
 
+    // Load XP
+    const savedXP = localStorage.getItem(XP_KEY);
+    if (savedXP) {
+        totalXP = parseInt(savedXP);
+    }
+
     // Load Word History
     const savedHistory = localStorage.getItem(HISTORY_KEY);
     if (savedHistory) {
@@ -518,12 +563,44 @@ window.onload = () => {
     }, animationTime);
 };
 
+// --- XP SYSTEM ---
+function addXP(amount) {
+    const oldLevel = Math.floor(totalXP / XP_PER_LEVEL) + 1;
+    totalXP += amount;
+    const newLevel = Math.floor(totalXP / XP_PER_LEVEL) + 1;
+    
+    localStorage.setItem(XP_KEY, totalXP);
+    
+    // Update Menu Level Badge if visible
+    if (menuLevelNumberEl) menuLevelNumberEl.textContent = newLevel;
+
+    // Level Up Check
+    if (newLevel > oldLevel) {
+        showLevelUpAnimation(newLevel);
+        playBonusSound(); // Level up sound!
+    }
+}
+
+function getLevel() {
+    return Math.floor(totalXP / XP_PER_LEVEL) + 1;
+}
+
+function showLevelUpAnimation(level) {
+    const lang = translations[currentLanguage];
+    levelUpTextEl.textContent = lang.levelUpMsg.replace('{l}', level);
+    levelUpOverlayEl.classList.remove('hidden');
+    triggerConfetti();
+    setTimeout(() => {
+        levelUpOverlayEl.classList.add('hidden');
+    }, 3000);
+}
+
 // --- VIEW NAVIGATION ---
 function showSection(sectionToShow) {
     allSections.forEach(section => {
-        section.classList.add('hidden');
+        if(section) section.classList.add('hidden');
     });
-    sectionToShow.classList.remove('hidden');
+    if(sectionToShow) sectionToShow.classList.remove('hidden');
     
     // Handle Top Controls Visibility
     if (sectionToShow === quizAreaEl) {
@@ -541,17 +618,29 @@ function showSection(sectionToShow) {
         topControlsButtonsEl.classList.add('hidden');
     }
     
-    // Specific Header Logic for Arcade
+    // Header Logic
+    const scoreStreak = document.getElementById('score-streak-wrapper');
+    const scoreTotalWrap = document.getElementById('score-total-wrapper');
+    const scoreCorrectWrap = document.getElementById('score-correct-wrapper');
+
     if (isArcadeMode && sectionToShow === quizAreaEl) {
-        document.getElementById('score-streak-wrapper').classList.remove('hidden');
-        scoreTotalWrapperEl.classList.add('hidden');
+        // In Arcade: Show Streak, Hide XP, Hide Standard Score
+        if(scoreStreak) scoreStreak.classList.remove('hidden');
+        if(xpDisplayEl) xpDisplayEl.classList.add('hidden');
+        if(scoreTotalWrap) scoreTotalWrap.classList.add('hidden');
+        if(scoreCorrectWrap) scoreCorrectWrap.classList.add('hidden');
     } else if (!isArcadeMode && sectionToShow === quizAreaEl) {
-        document.getElementById('score-streak-wrapper').classList.add('hidden');
-        scoreTotalWrapperEl.classList.remove('hidden');
+        // In Standard: Show Correct/Total
+        if(scoreStreak) scoreStreak.classList.add('hidden');
+        if(xpDisplayEl) xpDisplayEl.classList.add('hidden'); 
+        if(scoreTotalWrap) scoreTotalWrap.classList.remove('hidden');
+        if(scoreCorrectWrap) scoreCorrectWrap.classList.remove('hidden');
     } else {
-        // Defaults for non-quiz screens
-        document.getElementById('score-streak-wrapper').classList.add('hidden');
-        scoreTotalWrapperEl.classList.add('hidden'); 
+        // Default (Menu etc) - Hide game scores
+        if(scoreStreak) scoreStreak.classList.add('hidden');
+        if(xpDisplayEl) xpDisplayEl.classList.add('hidden'); 
+        if(scoreTotalWrap) scoreTotalWrap.classList.add('hidden');
+        if(scoreCorrectWrap) scoreCorrectWrap.classList.add('hidden');
     }
     
     priskcoinsDisplayEl.classList.remove('hidden');
@@ -568,8 +657,13 @@ function goToMenu() {
     }
     
     showSection(menuSectionEl);
+    
+    // Update Level Badge on Menu
+    if(menuLevelNumberEl) menuLevelNumberEl.textContent = getLevel();
+    
     updateLanguage();
 
+    // Show level instead of high score generally, but Arcade High Score is specific
     if (highScore > 0) {
         if (arcadeHighScoreEl) {
             arcadeHighScoreEl.classList.remove('hidden');
@@ -579,6 +673,32 @@ function goToMenu() {
             arcadeHighScoreEl.classList.add('hidden');
         }
     }
+}
+
+function goToProfile() {
+    playClickSound();
+    const level = getLevel();
+    const progress = totalXP % XP_PER_LEVEL;
+    const percent = (progress / XP_PER_LEVEL) * 100;
+    const lang = translations[currentLanguage];
+    
+    // Update UI
+    profileLevelNumberEl.textContent = level;
+    profileXpTextEl.textContent = `${progress} / ${XP_PER_LEVEL} XP`;
+    profileXpBarEl.style.width = `${percent}%`;
+    
+    statTotalXpEl.textContent = totalXP;
+    statTotalCoinsEl.textContent = totalPriskcoins;
+    
+    // Calculate stats from history
+    const words = Object.values(wordHistory);
+    const masteredCount = words.filter(w => w.mastered).length;
+    const seenCount = words.length;
+    
+    statMasteredEl.textContent = masteredCount;
+    statSeenEl.textContent = seenCount;
+    
+    showSection(profileSectionEl);
 }
 
 function goToDifficulty() {
@@ -644,13 +764,13 @@ function startGame(difficulty) {
 
 // --- GAME LOGIC (ARCADE MODE) ---
 function startArcadeMode() {
-    // Only play sound if we are actually starting, not just resetting state
     if(!isArcadeMode) playClickSound();
 
     isArcadeMode = true;
     scoreCorrect = 0;
     streak = 0; 
     selectedDifficulty = 'very_common'; 
+    arcadeScore = 0; // Reset session XP
     
     updateScoreUI();
     
@@ -661,12 +781,11 @@ function startArcadeMode() {
     // Show Quiz Area but... wait!
     showSection(quizAreaEl);
 
-    // NEW: Start Countdown before actual game loop
+    // Start Countdown
     startArcadeCountdown();
 }
 
 function startArcadeCountdown() {
-    // SAFETY CHECK: If HTML element is missing, skip countdown to avoid crash
     if(!countdownOverlayEl || !countdownNumberEl) {
         console.warn("Countdown elements missing in index.html. Starting game immediately.");
         nextQuestion();
@@ -677,15 +796,13 @@ function startArcadeCountdown() {
     
     let count = 3;
     
-    // Helper to re-trigger animation properly
     const animateCount = (num) => {
         countdownNumberEl.textContent = num;
         countdownNumberEl.classList.remove('countdown-animate');
-        void countdownNumberEl.offsetWidth; // Trigger reflow
+        void countdownNumberEl.offsetWidth; 
         countdownNumberEl.classList.add('countdown-animate');
     }
 
-    // Initialize first number
     animateCount(count);
 
     const countdownInterval = setInterval(() => {
@@ -699,7 +816,7 @@ function startArcadeCountdown() {
         } else {
             clearInterval(countdownInterval);
             countdownOverlayEl.classList.add('hidden');
-            nextQuestion(); // START THE GAME!
+            nextQuestion(); 
         }
     }, 1000);
 }
@@ -753,7 +870,8 @@ function nextQuestion() {
 
     const buttons = choicesContainerEl.querySelectorAll('button');
     buttons.forEach((btn, index) => {
-        btn.textContent = currentWords[index].word;
+        // Decode word
+        btn.textContent = decodeWord(currentWords[index].word);
         btn.onclick = () => checkAnswer(currentWords[index]);
         
         btn.className = 'btn-3d btn-purple'; 
@@ -813,7 +931,8 @@ function updateTimerUI() {
 
 function handleTimeUp() {
     const lang = translations[currentLanguage];
-    feedbackMessageEl.textContent = `${lang.timerTimeUp} ${lang.timerCorrectWord} ${currentQuestion.word.toUpperCase()}`;
+    // Decode correct word
+    feedbackMessageEl.textContent = `${lang.timerTimeUp} ${lang.timerCorrectWord} ${decodeWord(currentQuestion.word).toUpperCase()}`;
     feedbackMessageEl.className = 'mt-6 p-3 text-center text-xl font-bold rounded-xl feedback-error bg-error-red/10 text-error-red';
     feedbackMessageEl.classList.remove('hidden');
     
@@ -835,42 +954,49 @@ function checkAnswer(selectedWord) {
     const isCorrect = selectedWord.word === currentQuestion.word;
     const lang = translations[currentLanguage];
     
-    updateWordHistory(selectedWord.word, selectedWord.definition, isCorrect);
+    updateWordHistory(decodeWord(selectedWord.word), selectedWord.definition, isCorrect);
 
     if (isCorrect) {
         // --- CORRECT ---
         scoreCorrect++;
+        let xpGain = 0;
+
         if (isArcadeMode) {
              streak++;
-             let points = 10;
-             let timeBonus = timeLeft; 
-             points += timeBonus;
+             // Base 10 + Time bonus (0-10)
+             xpGain = 10 + timeLeft;
              
              let bonusMsg = "";
              
              if (streak % 5 === 0) {
-                 points += 20;
+                 xpGain += 20;
                  playBonusSound();
                  bonusMsg = lang.feedbackBonus;
                  triggerConfetti(); 
              } else if (timeLeft > 7) {
-                 points += 10; 
+                 xpGain += 10; // Fast answer bonus
                  bonusMsg = lang.feedbackFast;
                  playCorrectSound();
              } else {
                  playCorrectSound();
-                 bonusMsg = lang.feedbackCorrect; 
+                 bonusMsg = lang.feedbackCorrect.split("!")[0] + "!"; // Just "Correct!" part
              }
              
-             arcadeScore += points;
-             addPriskcoins(1);
+             arcadeScore += xpGain; // Accumulate session XP
+             addPriskcoins(1); // 1 Coin per correct
 
-             feedbackMessageEl.textContent = `${bonusMsg} (+${points})`; 
+             // Show XP gained in feedback
+             feedbackMessageEl.textContent = `${bonusMsg} (+${xpGain} XP)`; 
              feedbackMessageEl.className = 'mt-6 p-3 text-center text-xl font-bold rounded-xl feedback-success bg-success-green/10 text-success-green';
         } else {
+            // Standard Mode
             scoreTotal++; 
+            xpGain = 15;
+            addXP(xpGain); // Add immediately
+            addPriskcoins(1);
+            
             playCorrectSound();
-            feedbackMessageEl.textContent = lang.feedbackCorrect;
+            feedbackMessageEl.textContent = `${lang.feedbackCorrect}`; // "Correct! +15 XP"
             feedbackMessageEl.className = 'mt-6 p-3 text-center text-xl font-bold rounded-xl feedback-success bg-success-green/10 text-success-green';
         }
 
@@ -885,19 +1011,18 @@ function checkAnswer(selectedWord) {
     } else {
         // --- WRONG ---
         playWrongSound();
-        
         highlightCorrectAnswer();
         
         const buttons = choicesContainerEl.querySelectorAll('button');
         buttons.forEach(btn => {
-            if (btn.textContent === selectedWord.word) {
+            if (btn.textContent === decodeWord(selectedWord.word)) {
                 btn.classList.add('shake-animation'); 
             }
         });
 
         if (isArcadeMode) {
              // GAME OVER
-             feedbackMessageEl.textContent = `${lang.feedbackWrong} ${currentQuestion.word.toUpperCase()}`;
+             feedbackMessageEl.textContent = `${lang.feedbackWrong} ${decodeWord(currentQuestion.word).toUpperCase()}`;
              feedbackMessageEl.className = 'mt-6 p-3 text-center text-xl font-bold rounded-xl feedback-error bg-error-red/10 text-error-red';
              feedbackMessageEl.classList.remove('hidden');
              
@@ -907,7 +1032,7 @@ function checkAnswer(selectedWord) {
         } else {
             // Standard Mode
             scoreTotal++; 
-            feedbackMessageEl.textContent = `${lang.feedbackWrong} ${currentQuestion.word.toUpperCase()}`;
+            feedbackMessageEl.textContent = `${lang.feedbackWrong} ${decodeWord(currentQuestion.word).toUpperCase()}`;
             feedbackMessageEl.className = 'mt-6 p-3 text-center text-xl font-bold rounded-xl feedback-error bg-error-red/10 text-error-red';
             feedbackMessageEl.classList.remove('hidden');
             
@@ -923,7 +1048,7 @@ function checkAnswer(selectedWord) {
 function highlightCorrectAnswer() {
     const buttons = choicesContainerEl.querySelectorAll('button');
     buttons.forEach(btn => {
-        if (btn.textContent === currentQuestion.word) {
+        if (btn.textContent === decodeWord(currentQuestion.word)) {
             btn.classList.remove('btn-purple');
             btn.classList.add('btn-green');
             btn.classList.add('jelly-animation'); 
@@ -936,11 +1061,14 @@ function highlightCorrectAnswer() {
 
 function updateScoreUI() {
     if (isArcadeMode) {
-        scoreCorrectEl.textContent = arcadeScore;
-        document.getElementById('score-streak').textContent = streak;
+        // Using Arcade Score logic
+        if(scoreCorrectEl) scoreCorrectEl.textContent = arcadeScore; 
+        const streakEl = document.getElementById('score-streak');
+        if(streakEl) streakEl.textContent = streak;
     } else {
-        scoreCorrectEl.textContent = scoreCorrect;
-        scoreTotalEl.textContent = scoreTotal;
+        // Using Standard Score logic
+        if(scoreCorrectEl) scoreCorrectEl.textContent = scoreCorrect;
+        if(scoreTotalEl) scoreTotalEl.textContent = scoreTotal;
     }
 }
 
@@ -948,12 +1076,15 @@ function gameOverArcade() {
     playGameOverSound();
     showSection(gameOverSectionEl);
     
+    // ADD XP AT END OF ARCADE SESSION
+    addXP(arcadeScore);
+    
     const lang = translations[currentLanguage];
     
-    finalScoreEl.textContent = arcadeScore;
+    finalScoreEl.textContent = arcadeScore + " XP";
     arcadeBestScoreEl.textContent = highScore;
 
-    // Check High Score
+    // Check High Score (Keeping score logic simple: High Score = XP gained in one run)
     if (arcadeScore > highScore) {
         highScore = arcadeScore;
         localStorage.setItem(HIGH_SCORE_KEY, highScore);
@@ -1075,12 +1206,12 @@ function getDailyWord() {
 
 function handleSubmitDailyGuess() {
     const guess = dailyInputEl.value.trim().toLowerCase();
-    const answer = dailyWord.word.toLowerCase();
+    const answer = decodeWord(dailyWord.word).toLowerCase();
     const lang = translations[currentLanguage];
 
     if (!guess) return; 
 
-    updateWordHistory(dailyWord.word, dailyWord.definition, guess === answer);
+    updateWordHistory(decodeWord(dailyWord.word), dailyWord.definition, guess === answer);
 
     if (guess === answer) {
         // --- CORRECT ---
@@ -1095,6 +1226,7 @@ function handleSubmitDailyGuess() {
         
         localStorage.setItem(DAILY_DATE_KEY, new Date().toDateString());
         addPriskcoins(100); 
+        addXP(200); // Daily XP Bonus
 
         setTimeout(() => showDailyComplete(true, true), 1500);
         
@@ -1167,7 +1299,7 @@ function showDailyComplete(justFinished, won) {
     }
     
     if (!dailyWord) getDailyWord();
-    dailyCompleteWordEl.textContent = dailyWord.word;
+    dailyCompleteWordEl.textContent = decodeWord(dailyWord.word);
     dailyCompleteDefinitionEl.textContent = dailyWord.definition;
     
     startDailyCountdown();
@@ -1273,7 +1405,7 @@ function renderReviewList(filterType) {
         item.innerHTML = `
             <div>
                 <div class="flex items-center gap-2 mb-1">
-                    <span class="font-bold text-lg text-gray-800 capitalize">${w.word}</span>
+                    <span class="font-bold text-lg text-gray-800 capitalize">${decodeWord(w.word)}</span>
                     <span class="text-xs px-2 py-0.5 rounded-full font-bold ${badgeColor}">${badgeText}</span>
                 </div>
                 <p class="text-sm text-gray-500 italic leading-tight line-clamp-2">"${w.definition}"</p>
