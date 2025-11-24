@@ -173,6 +173,30 @@
             </button>
         </div>
 
+        <div id="help-section" class="p-8 bg-gray-50 rounded-2xl hidden">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700 text-center" data-translate="helpTitle">How to Play</h2>
+            <p class="mb-6 text-gray-600 text-center" data-translate="helpDesc">
+                The goal of Priskribu is to correctly match the definition to the correct vocabulary word. If you get it wrong, the correct word will be highlighted!
+            </p>
+            <div class="space-y-4 mb-6 text-center text-gray-600">
+                <div class="bg-white p-4 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-lg mb-2 text-success-green" data-translate="helpStandardTitle">Study Mode:</h3>
+                    <p class="text-sm" data-translate="helpStandardDesc">
+                        Play at your own pace! Your score tracks correct vs total attempts. Choose your desired word difficulty to filter the words you encounter.
+                    </p>
+                </div>
+                 <div class="bg-white p-4 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-lg mb-2 text-hard-orange" data-translate="helpArcadeTitle">Word Rush:</h3>
+                    <p class="text-sm" data-translate="helpArcadeDesc">
+                       This is a high-speed challenge! You have 10 seconds to answer each question. If the timer hits zero OR you select the wrong answer, the game ends immediately. Your goal is to get the highest streak possible!
+                    </p>
+                </div>
+            </div>
+            <button onclick="goToMenu()" class="btn-3d btn-gray btn-dark-text btn-small block mx-auto" data-translate="backToMenu">
+                ← Back to Menu
+            </button>
+        </div>
+
         <div id="profile-section" class="p-6 bg-gray-50 rounded-2xl hidden w-full">
             <div class="text-center mb-6">
                 <h2 class="text-2xl font-extrabold text-gray-800" data-translate="profileTitle">Player Profile</h2>
